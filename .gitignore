@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.*
+
+# Build
+dist/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Generated
+generated/
+
+# Logs
+*.log
+
+# OS / IDE
+.DS_Store
+
+# AI development tools
+.agents/
+.claude/
+.windsurf/

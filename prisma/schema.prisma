@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model GuildUser {
+  id               Int      @id @default(autoincrement())
+  guildId          String
+  userId           String
+
+  firstJoinedAt    DateTime
+  lastJoinedAt     DateTime
+  joinCount        Int      @default(1)
+  accountCreatedAt DateTime
+
+  @@unique([guildId, userId])
+}
