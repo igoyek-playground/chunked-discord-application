@@ -14,67 +14,45 @@ export class VerificationCodeService {
             );
         }
 
-        const letterCount = randomInt(
-            1,
-            length,
-        );
-
-        const digitCount =
-            length - letterCount;
-
         const characters: string[] = [];
 
-        for (let i = 0; i < letterCount; i++) {
+        for (let i = 0; i < length; i++) {
             characters.push(
-                this.getRandomCharacter(
-                    this.LETTERS,
+                this.randomFrom(
+                    randomInt(0, 2) === 0
+                        ? this.LETTERS
+                        : this.DIGITS,
                 ),
             );
         }
 
-        for (let i = 0; i < digitCount; i++) {
-            characters.push(
-                this.getRandomCharacter(
-                    this.DIGITS,
-                ),
-            );
-        }
+        this.ensureContains(characters, this.LETTERS);
+        this.ensureContains(characters, this.DIGITS);
 
-        return this.shuffle(
-            characters,
-        ).join("");
+        return characters.join("");
     }
 
-    private static getRandomCharacter(
-        characters: string,
-    ): string {
-        return characters[
-            randomInt(0, characters.length)
-        ];
+    private static randomFrom(pool: string): string {
+        return pool[randomInt(0, pool.length)]!;
     }
 
-    private static shuffle(
+    private static ensureContains(
         characters: string[],
-    ): string[] {
-        for (
-            let i = characters.length - 1;
-            i > 0;
-            i--
-        ) {
-            const j = randomInt(
-                0,
-                i + 1,
+        pool: string,
+    ): void {
+        const alreadyPresent =
+            characters.some((char) =>
+                pool.includes(char),
             );
 
-            [
-                characters[i],
-                characters[j],
-            ] = [
-                characters[j],
-                characters[i],
-            ];
+        if (alreadyPresent) {
+            return;
         }
 
-        return characters;
+        const index =
+            randomInt(0, characters.length);
+
+        characters[index] =
+            this.randomFrom(pool);
     }
 }

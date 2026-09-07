@@ -13,7 +13,7 @@ export default defineEvent({
             interaction.customId ===
                 VERIFICATION_CUSTOM_IDS.verifyButton
         ) {
-            await VerificationController.handleVerifyButton(
+            await VerificationController.handleVerifyButtonClick(
                 interaction,
             );
 

@@ -42,10 +42,7 @@ export class VerificationSessionService {
             return null;
         }
 
-        if (
-            Date.now() >
-            session.expiresAt
-        ) {
+        if (Date.now() > session.expiresAt) {
             this.sessions.delete(key);
 
             return null;

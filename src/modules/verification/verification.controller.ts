@@ -1,32 +1,40 @@
-import type {
-    ButtonInteraction,
-    GuildTextBasedChannel,
-    ModalSubmitInteraction,
+import {
+    MessageFlags,
+    type ButtonInteraction,
+    type Guild,
+    type GuildMember,
+    type GuildTextBasedChannel,
+    type InteractionReplyOptions,
+    type ModalSubmitInteraction,
 } from "discord.js";
 
 import { verificationConfig } from "../../../config/modules/verification.config.js";
 import { logger } from "../../core/utils/logger.js";
+import { VerificationAttemptService } from "./verification-attempt.service.js";
 import { VerificationCodeService } from "./verification-code.service.js";
-import { VERIFICATION_CUSTOM_IDS } from "./verification.constants.js";
+import { VerificationModalBuilder } from "./verification-modal.builder.js";
+import { VerificationPanelBuilder } from "./verification-panel.builder.js";
+import { VerificationRoleService } from "./verification-role.service.js";
 import { VerificationService } from "./verification.service.js";
 import { VerificationSessionService } from "./verification-session.service.js";
-import { VerificationUiService } from "./verification-ui.service.js";
+import { VERIFICATION_CUSTOM_IDS } from "./verification.constants.js";
 
 export class VerificationController {
     public static async sendPanel(
         channel: GuildTextBasedChannel,
     ): Promise<void> {
-        VerificationUiService.createPanel();
+        await channel.send(
+            VerificationPanelBuilder.build(),
+        );
     }
 
-    public static async handleVerifyButton(
+    public static async handleVerifyButtonClick(
         interaction: ButtonInteraction,
     ): Promise<void> {
         if (!verificationConfig.enabled) {
-            await interaction.reply(
-                VerificationUiService.createEphemeralMessage(
-                    verificationConfig.messages.disabled,
-                ),
+            await this.reply(
+                interaction,
+                verificationConfig.messages.disabled,
             );
 
             return;
@@ -36,6 +44,21 @@ export class VerificationController {
             !interaction.inGuild() ||
             !interaction.guild
         ) {
+            return;
+        }
+
+        const lockedUntil =
+            VerificationAttemptService.isLocked(
+                interaction.guild.id,
+                interaction.user.id,
+            );
+
+        if (lockedUntil) {
+            await this.reply(
+                interaction,
+                this.formatLockedMessage(lockedUntil),
+            );
+
             return;
         }
 
@@ -52,10 +75,9 @@ export class VerificationController {
                 verificationConfig.verifiedRoleId,
             )
         ) {
-            await interaction.reply(
-                VerificationUiService.createEphemeralMessage(
-                    verificationConfig.messages.alreadyVerified,
-                ),
+            await this.reply(
+                interaction,
+                verificationConfig.messages.alreadyVerified,
             );
 
             return;
@@ -74,9 +96,7 @@ export class VerificationController {
         );
 
         await interaction.showModal(
-            VerificationUiService.createModal(
-                code,
-            ),
+            VerificationModalBuilder.build(code),
         );
     }
 
@@ -87,6 +107,23 @@ export class VerificationController {
             !interaction.inGuild() ||
             !interaction.guild
         ) {
+            return;
+        }
+
+        // Modal mógł zostać otwarty tuż przed nałożeniem blokady —
+        // sprawdzamy stan jeszcze raz przy submicie.
+        const lockedUntil =
+            VerificationAttemptService.isLocked(
+                interaction.guild.id,
+                interaction.user.id,
+            );
+
+        if (lockedUntil) {
+            await this.reply(
+                interaction,
+                this.formatLockedMessage(lockedUntil),
+            );
+
             return;
         }
 
@@ -104,42 +141,24 @@ export class VerificationController {
                 );
 
             if (result === "expired") {
-                await interaction.reply(
-                    VerificationUiService.createEphemeralMessage(
-                        verificationConfig.messages.expiredCode,
-                    ),
+                await this.reply(
+                    interaction,
+                    verificationConfig.messages.expiredCode,
                 );
 
                 return;
             }
 
             if (result === "invalid") {
-                await interaction.reply(
-                    VerificationUiService.createEphemeralMessage(
-                        verificationConfig.messages.invalidCode,
-                    ),
+                await this.handleInvalidCode(
+                    interaction,
                 );
 
                 return;
             }
 
-            const member =
-                interaction.guild.members.cache.get(
-                    interaction.user.id,
-                ) ??
-                await interaction.guild.members.fetch(
-                    interaction.user.id,
-                );
-
-            await VerificationService.grantVerifiedRole(
-                interaction.guild,
-                member,
-            );
-
-            await interaction.reply(
-                VerificationUiService.createEphemeralMessage(
-                    verificationConfig.messages.verified,
-                ),
+            await this.handleSuccessfulVerification(
+                interaction,
             );
         } catch (error) {
             logger.error(
@@ -147,48 +166,177 @@ export class VerificationController {
                 error,
             );
 
-            let message =
-                verificationConfig.messages.internalError;
-
-            if (
-                error instanceof Error &&
-                error.message ===
-                    "VERIFICATION_ROLE_NOT_FOUND"
-            ) {
-                message =
-                    verificationConfig.messages.missingRole;
-            }
-
-            if (
-                error instanceof Error &&
-                (
-                    error.message ===
-                        "ROLE_HIERARCHY_ERROR" ||
-                    error.message ===
-                        "BOT_MISSING_MANAGE_ROLES"
-                )
-            ) {
-                message =
-                    verificationConfig.messages.roleHierarchyError;
-            }
-
-            const payload =
-                VerificationUiService.createEphemeralMessage(
-                    message,
-                );
-
-            if (
-                interaction.replied ||
-                interaction.deferred
-            ) {
-                await interaction.followUp(
-                    payload,
-                );
-            } else {
-                await interaction.reply(
-                    payload,
-                );
-            }
+            await this.replyOrFollowUp(
+                interaction,
+                this.resolveGrantErrorMessage(error),
+            );
         }
+    }
+
+    public static async forceVerify(
+        guild: Guild,
+        member: GuildMember,
+    ): Promise<void> {
+        await VerificationRoleService.grantVerifiedRole(
+            guild,
+            member,
+        );
+
+        VerificationSessionService.delete(
+            guild.id,
+            member.id,
+        );
+
+        VerificationAttemptService.reset(
+            guild.id,
+            member.id,
+        );
+    }
+
+    public static removeLimit(
+        guildId: string,
+        userId: string,
+    ): void {
+        VerificationAttemptService.reset(
+            guildId,
+            userId,
+        );
+    }
+
+    public static resolveGrantErrorMessage(
+        error: unknown,
+    ): string {
+        if (
+            error instanceof Error &&
+            error.message ===
+                "VERIFICATION_ROLE_NOT_FOUND"
+        ) {
+            return verificationConfig.messages.missingRole;
+        }
+
+        if (
+            error instanceof Error &&
+            (
+                error.message ===
+                    "ROLE_HIERARCHY_ERROR" ||
+                error.message ===
+                    "BOT_MISSING_MANAGE_ROLES"
+            )
+        ) {
+            return verificationConfig.messages.roleHierarchyError;
+        }
+
+        return verificationConfig.messages.internalError;
+    }
+
+    private static async handleInvalidCode(
+        interaction: ModalSubmitInteraction,
+    ): Promise<void> {
+        if (
+            !interaction.guild
+        ) {
+            return;
+        }
+
+        const lockedUntil =
+            VerificationAttemptService.registerFailure(
+                interaction.guild.id,
+                interaction.user.id,
+            );
+
+        if (lockedUntil) {
+            await this.reply(
+                interaction,
+                this.formatLockedMessage(lockedUntil),
+            );
+
+            return;
+        }
+
+        await this.reply(
+            interaction,
+            verificationConfig.messages.invalidCode,
+        );
+    }
+
+    private static async handleSuccessfulVerification(
+        interaction: ModalSubmitInteraction,
+    ): Promise<void> {
+        if (
+            !interaction.guild
+        ) {
+            return;
+        }
+
+        const member =
+            interaction.guild.members.cache.get(
+                interaction.user.id,
+            ) ??
+            await interaction.guild.members.fetch(
+                interaction.user.id,
+            );
+
+        await VerificationRoleService.grantVerifiedRole(
+            interaction.guild,
+            member,
+        );
+
+        VerificationAttemptService.reset(
+            interaction.guild.id,
+            interaction.user.id,
+        );
+
+        await this.reply(
+            interaction,
+            verificationConfig.messages.verified,
+        );
+    }
+
+    private static formatLockedMessage(
+        lockedUntil: number,
+    ): string {
+        const unixSeconds =
+            Math.floor(lockedUntil / 1000);
+
+        return verificationConfig.messages.locked.replace(
+            "{EXPIRES}",
+            `<t:${unixSeconds}:R>`,
+        );
+    }
+
+    private static async reply(
+        interaction: ButtonInteraction | ModalSubmitInteraction,
+        content: string,
+    ): Promise<void> {
+        const payload: InteractionReplyOptions =
+            this.buildEphemeralPayload(content);
+
+        await interaction.reply(payload);
+    }
+
+    private static async replyOrFollowUp(
+        interaction: ModalSubmitInteraction,
+        content: string,
+    ): Promise<void> {
+        const payload: InteractionReplyOptions =
+            this.buildEphemeralPayload(content);
+
+        if (
+            interaction.replied ||
+            interaction.deferred
+        ) {
+            await interaction.followUp(payload);
+        } else {
+            await interaction.reply(payload);
+        }
+    }
+
+    private static buildEphemeralPayload(
+        content: string,
+    ): InteractionReplyOptions {
+        return {
+            content,
+            flags: MessageFlags.Ephemeral,
+        };
     }
 }
