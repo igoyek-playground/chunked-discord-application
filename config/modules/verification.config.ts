@@ -79,7 +79,7 @@ export const verificationConfig = {
         /**
          * Kolor bocznego akcentu kontenera Components V2.
          */
-        accentColor: 0x5865F2,
+        accentColor: "#5865F2",
 
         title: "WERYFIKACJA",
 

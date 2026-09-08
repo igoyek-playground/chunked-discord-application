@@ -4,6 +4,7 @@ import {
     MessageFlags,
     SectionBuilder,
     TextDisplayBuilder,
+    resolveColor,
     type MessageCreateOptions,
 } from "discord.js";
 
@@ -44,7 +45,9 @@ export class VerificationPanelBuilder {
         const container =
             new ContainerBuilder()
                 .setAccentColor(
-                    verificationConfig.panel.accentColor,
+                    resolveColor(
+                        verificationConfig.panel.accentColor,
+                    ),
                 )
                 .addSectionComponents(section)
                 .addTextDisplayComponents(

@@ -1,4 +1,4 @@
-import type { ButtonStyle } from "discord.js";
+import type { ButtonStyle, HexColorString } from "discord.js";
 
 export interface VerificationConfig {
     enabled: boolean;
@@ -35,7 +35,10 @@ export interface VerificationConfig {
     };
 
     panel: {
-        accentColor: number;
+        /**
+         * Kolor w formacie HEX, np. "#5865F2".
+         */
+        accentColor: HexColorString;
         title: string;
         description: string;
         footer: string;
