@@ -1,0 +1,21 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        // WAŻNE dla wersji wydawanej na zewnątrz: mapy źródeł pozwalają
+        // trywialnie odtworzyć oryginalny kod z zaobfuskowanego JS-a.
+        // Obfuskacja bez wyłączenia sourceMap nie chroni praktycznie
+        // niczego.
+        "sourceMap": false,
+        "removeComments": true
+    },
+    // `include` w rozszerzającym pliku NADPISUJE (nie scala) wartość
+    // z tsconfig.json — celowo dopisujemy tu `config` i `generated`,
+    // których nie ma w konfiguracji używanej przez `tsx` w trybie dev
+    // (tam nie są potrzebne, bo tsx czyta bezpośrednio z drzewa źródeł).
+    "include": [
+        "src/**/*.ts",
+        "scripts/**/*.ts",
+        "config/**/*.ts",
+        "generated/**/*.ts"
+    ]
+}

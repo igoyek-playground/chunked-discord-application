@@ -4,8 +4,9 @@ import {
     ButtonStyle,
     EmbedBuilder,
     resolveColor,
-    type Giveaway,
 } from "discord.js";
+
+import type { Giveaway } from "../../../generated/prisma/client.js";
 
 import { giveawayConfig } from "../../../config/modules/giveaway.config.js";
 import { GIVEAWAY_CUSTOM_IDS } from "./giveaway.constants.js";
@@ -174,6 +175,11 @@ export class GiveawayEmbedBuilder {
         };
     }
 
+    /**
+     * Wiadomość efemeryczna wyświetlana po ponownym kliknięciu
+     * przycisku dołączenia — informuje, że użytkownik już bierze
+     * udział, i daje przycisk do rezygnacji.
+     */
     public static buildAlreadyJoinedReply(
         giveawayId: string,
     ): {
