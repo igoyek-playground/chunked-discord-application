@@ -142,7 +142,7 @@ async function handleSendPanel(
     ) {
         await interaction.reply({
             content:
-                "Nie można wysłać panelu na tym kanale.",
+                "`[ ✘ ]` Nie można wysłać panelu na tym kanale.",
             flags: MessageFlags.Ephemeral,
         });
 
@@ -153,7 +153,7 @@ async function handleSendPanel(
 
     await interaction.reply({
         content:
-            `Panel weryfikacji został wysłany na <#${channel.id}>.`,
+            "`[ ✔ ]` Panel weryfikacji został wysłany na <#${channel.id}>.",
         flags: MessageFlags.Ephemeral,
     });
 }

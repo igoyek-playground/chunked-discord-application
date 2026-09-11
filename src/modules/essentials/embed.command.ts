@@ -24,11 +24,6 @@ const TARGET_CHANNEL_TYPES = [
     ChannelType.GuildAnnouncement,
 ] as const;
 
-/**
- * Wspólne, w pełni opcjonalne opcje "wyglądu" embeda — używane
- * zarówno przy tworzeniu, jak i edycji, żeby nie duplikować
- * definicji między subkomendami.
- */
 function addAppearanceOptions(
     subcommand: SlashCommandSubcommandBuilder,
 ): SlashCommandSubcommandBuilder {
@@ -297,7 +292,7 @@ async function handleCreate(
         });
 
         await interaction.reply({
-            content: `Embed został wysłany na ${channel}.`,
+            content: `\`[ ✔ \`] Embed został wysłany na ${channel}.`,
             flags: MessageFlags.Ephemeral,
         });
     } catch (error) {
@@ -305,7 +300,7 @@ async function handleCreate(
 
         await replyError(
             interaction,
-            "Nie udało się wysłać embeda. Sprawdź uprawnienia bota na docelowym kanale.",
+            `\`[ ✘ \`] Nie udało się wysłać embeda. Sprawdź uprawnienia bota na docelowym kanale.`,
         );
     }
 }
@@ -318,7 +313,7 @@ async function handleEdit(
     if (!channel) {
         await replyError(
             interaction,
-            "Nie można edytować wiadomości na tym kanale.",
+            `\`[ ✘ \`] Nie można edytować wiadomości na tym kanale.`,
         );
 
         return;
@@ -329,7 +324,7 @@ async function handleEdit(
     if (!isValidColorInput(colorInput)) {
         await replyError(
             interaction,
-            `Niepoprawny format koloru: \`${colorInput}\`. Użyj formatu HEX, np. \`${DEFAULT_COLOR}\`.`,
+            `\`[ ✘ \`] Niepoprawny format koloru: \`${colorInput}\`. Użyj formatu HEX, np. \`${DEFAULT_COLOR}\`.`,
         );
 
         return;
@@ -367,7 +362,7 @@ async function handleEdit(
         });
 
         await interaction.reply({
-            content: `Embed na ${channel} został zaktualizowany.`,
+            content: `\`[ ✔ \`] Embed na ${channel} został zaktualizowany.`,
             flags: MessageFlags.Ephemeral,
         });
     } catch (error) {
@@ -375,7 +370,7 @@ async function handleEdit(
 
         await replyError(
             interaction,
-            "Nie udało się zaktualizować embeda. Sprawdź, czy podane dane są poprawne.",
+            `\`[ ✘ \`] Nie udało się zaktualizować embeda. Sprawdź, czy podane dane są poprawne.`,
         );
     }
 }
@@ -388,7 +383,7 @@ async function handleJson(
     if (!channel) {
         await replyError(
             interaction,
-            "Nie można wysłać embeda na tym kanale.",
+            `\`[ ✘ \`] Nie można wysłać embeda na tym kanale.`,
         );
 
         return;
@@ -402,7 +397,7 @@ async function handleJson(
     } catch {
         await replyError(
             interaction,
-            "Podany tekst nie jest poprawnym JSON-em.",
+            `\`[ ✘ \`] Podany tekst nie jest poprawnym JSON-em.`,
         );
 
         return;
@@ -415,7 +410,7 @@ async function handleJson(
     } catch {
         await replyError(
             interaction,
-            "Podany JSON nie odpowiada schematowi embeda Discorda.",
+            `\`[ ✘ \`] Podany JSON nie odpowiada schematowi embeda Discorda.`,
         );
 
         return;
@@ -440,7 +435,7 @@ async function handleJson(
             });
 
             await interaction.reply({
-                content: `Embed na ${channel} został zaktualizowany.`,
+                content: `\`[ ✔ \`] Embed na ${channel} został zaktualizowany.`,
                 flags: MessageFlags.Ephemeral,
             });
 
@@ -452,7 +447,7 @@ async function handleJson(
         });
 
         await interaction.reply({
-            content: `Embed został wysłany na ${channel}.`,
+            content: `\`[ ✔ \`] Embed został wysłany na ${channel}.`,
             flags: MessageFlags.Ephemeral,
         });
     } catch (error) {
@@ -460,16 +455,11 @@ async function handleJson(
 
         await replyError(
             interaction,
-            "Discord odrzucił ten embed — sprawdź, czy JSON jest poprawny i mieści się w limitach embedów.",
+            `\`[ ✘ \`] Discord odrzucił ten embed — sprawdź, czy JSON jest poprawny i mieści się w limitach embedów.`,
         );
     }
 }
 
-/**
- * Nakłada na embed opcjonalne opcje wyglądu wspólne dla `create`
- * i `edit` (kolor jest obsługiwany osobno przez wywołujące funkcje,
- * bo w edycji ma inną logikę domyślną).
- */
 function applyAppearanceOptions(
     interaction: ChatInputCommandInteraction,
     embed: EmbedBuilder,
@@ -576,7 +566,7 @@ async function fetchEditableMessage(
         if (message.author.id !== interaction.client.user.id) {
             await replyError(
                 interaction,
-                "Mogę edytować wyłącznie wiadomości wysłane przeze mnie.",
+                `\`[ ✘ \`] Mogę edytować wyłącznie wiadomości wysłane przeze mnie.`,
             );
 
             return null;
@@ -592,7 +582,7 @@ async function fetchEditableMessage(
 
         await replyError(
             interaction,
-            "Nie znaleziono wiadomości o podanym ID na tym kanale.",
+            `\`[ ✘ \`] Nie znaleziono wiadomości o podanym ID na tym kanale.`,
         );
 
         return null;

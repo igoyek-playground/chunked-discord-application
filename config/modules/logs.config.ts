@@ -23,7 +23,7 @@ export const logsConfig = {
         delete: {
             enabled: true,
             channelId: "1416378667721818132",
-            pingRoleIds: ["123456789012345678"],
+            pingRoleIds: ["1543268489333055650"],
         },
 
         /**

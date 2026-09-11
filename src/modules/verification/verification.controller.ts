@@ -110,8 +110,6 @@ export class VerificationController {
             return;
         }
 
-        // Modal mógł zostać otwarty tuż przed nałożeniem blokady —
-        // sprawdzamy stan jeszcze raz przy submicie.
         const lockedUntil =
             VerificationAttemptService.isLocked(
                 interaction.guild.id,

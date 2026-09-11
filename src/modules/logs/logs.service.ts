@@ -11,11 +11,6 @@ import { logger } from "../../core/utils/logger.js";
 import type { LogEventConfig } from "./logs.types.js";
 
 export class LogsService {
-    /**
-     * Wysyła gotowy embed logu na kanał skonfigurowany dla danego typu
-     * logu, oznaczając (ping) skonfigurowane role w treści wiadomości
-     * nad embedem.
-     */
     public static async send(
         guild: Guild,
         eventConfig: LogEventConfig,
@@ -81,12 +76,6 @@ export class LogsService {
         }
     }
 
-    /**
-     * Odnajduje najnowszy wpis dziennika audytu danego typu, którego
-     * cel (`target`) posiada wskazane ID. Zwraca `null`, jeśli nie
-     * uda się pobrać dziennika (np. brak uprawnień) albo najnowszy
-     * pasujący wpis jest zbyt stary, by dotyczyć bieżącego zdarzenia.
-     */
     public static async findAuditEntry<Type extends AuditLogEvent>(
         guild: Guild,
         type: Type,

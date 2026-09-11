@@ -19,3 +19,66 @@ model GuildUser {
 
   @@unique([guildId, userId])
 }
+
+model Ticket {
+  id           Int       @id @default(autoincrement())
+  guildId      String
+  channelId    String    @unique
+  categoryKey  String
+  ownerId      String
+  claimedById  String?
+  status       String    @default("open")
+
+  createdAt    DateTime  @default(now())
+  closedAt     DateTime?
+  closedById   String?
+
+  @@index([guildId, ownerId, status])
+  @@index([guildId, ownerId, categoryKey, status])
+}
+
+
+model Giveaway {
+  id          String   @id
+
+  guildId     String
+  channelId   String
+  messageId   String?
+  hostId      String
+
+  prize       String
+  winnerCount Int
+
+  status      String   @default("ACTIVE")
+
+  endsAt      DateTime
+  createdAt   DateTime @default(now())
+  endedAt     DateTime?
+
+  entries     GiveawayEntry[]
+  winners     GiveawayWinner[]
+
+  @@index([guildId, status])
+  @@index([status, endsAt])
+}
+
+model GiveawayEntry {
+  id         Int      @id @default(autoincrement())
+  giveawayId String
+  userId     String
+  joinedAt   DateTime @default(now())
+
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@unique([giveawayId, userId])
+}
+
+model GiveawayWinner {
+  id         Int      @id @default(autoincrement())
+  giveawayId String
+  userId     String
+  rerolled   Boolean  @default(false)
+  wonAt      DateTime @default(now())
+
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+}

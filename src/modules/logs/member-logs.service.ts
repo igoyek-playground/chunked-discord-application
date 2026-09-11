@@ -180,10 +180,6 @@ export class MemberLogsService {
         await this.logRoleChanges(oldMember, newMember);
     }
 
-    /**
-     * Wywoływane bezpośrednio z modułu weryfikacji po pomyślnym
-     * nadaniu roli — zarówno samodzielnym, jak i ręcznym (przez admina).
-     */
     public static async logVerified(
         guild: Guild,
         member: GuildMember,
@@ -397,9 +393,6 @@ export class MemberLogsService {
 
         for (const role of addedRoles.values()) {
             if (role.id === verificationConfig.verifiedRoleId) {
-                // Rola weryfikacyjna ma własny, dedykowany log
-                // (members.verified) — pomijamy ją tutaj, żeby
-                // uniknąć zdublowania wpisu.
                 continue;
             }
 
